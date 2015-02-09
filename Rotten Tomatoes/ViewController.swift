@@ -100,6 +100,15 @@ class ViewController: UITableViewController //UIViewController, UITableViewDataS
     override func viewDidLoad()
     {
         self.title = "Rotten Tomatoes"
+        
+        self.refreshControl?.addTarget(self, action: "onRefresh:", forControlEvents: UIControlEvents.ValueChanged)
+    }
+    
+    func onRefresh(sender:AnyObject)
+    {
+        println("REFRESH")
+        
+        loadMovieData()
     }
     
     override func viewDidAppear(animated: Bool)
@@ -116,6 +125,8 @@ class ViewController: UITableViewController //UIViewController, UITableViewDataS
         let request = NSMutableURLRequest(URL: NSURL(string:RottenTomatoesURLString)!);
         
         NSURLConnection.sendAsynchronousRequest(request, queue: NSOperationQueue.mainQueue(), completionHandler:{ ( response, data, error) in var errorValue: NSError? = nil
+            
+            self.refreshControl?.endRefreshing()
             
             if (error != nil)
             {

@@ -91,6 +91,8 @@ class ViewController: UITableViewController //UIViewController, UITableViewDataS
 
     func loadMovieData()
     {
+        showActivity()
+        
         let RottenTomatoesURLString = "http://api.rottentomatoes.com/api/public/v1.0/lists/movies/opening.json?apikey=v4dp89x7m2t8annz9f382qpz"
         
         let request = NSMutableURLRequest(URL: NSURL(string:RottenTomatoesURLString)!);
@@ -102,7 +104,27 @@ class ViewController: UITableViewController //UIViewController, UITableViewDataS
             self.moviesArray = dictionary["movies"]! as? NSArray
             
             self.tableView.reloadData()
+            
+            self.hideActivity()
         });
     }
+    
+    func showActivity()
+    {
+        actInd = UIActivityIndicatorView(frame: CGRectMake(0,0, 50, 50)) as UIActivityIndicatorView
+        actInd?.center = self.view.center
+        actInd?.hidesWhenStopped = true
+        actInd?.activityIndicatorViewStyle = UIActivityIndicatorViewStyle.Gray
+        view.addSubview(actInd!)
+        actInd?.startAnimating()
+    }
+    
+    func hideActivity()
+    {
+        actInd?.stopAnimating()
+        actInd?.removeFromSuperview()
+    }
+    
+    var actInd: UIActivityIndicatorView?
 }
 

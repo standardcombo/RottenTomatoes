@@ -11,9 +11,14 @@ import UIKit
 class ViewController: UITableViewController //UIViewController, UITableViewDataSource, UITableViewDelegate
 {
     var moviesArray: NSArray?
+    var networkError: Bool = false
 
     override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
+        if (networkError)
+        {
+            return 1;
+        }
         if (moviesArray != nil)
         {
             var i:Int? = moviesArray?.count as Int?
@@ -24,59 +29,72 @@ class ViewController: UITableViewController //UIViewController, UITableViewDataS
     
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell
     {
-        let index:Int = indexPath.row
-        
-        let cell = tableView.dequeueReusableCellWithIdentifier("myCell") as ReviewCell;
-        
-        if (moviesArray?.count >= index)
+        if ( !networkError )
         {
-            let movie: NSDictionary = self.moviesArray?[index] as NSDictionary;
+            let index:Int = indexPath.row
             
-            let ratings: NSDictionary = movie["ratings"] as NSDictionary
+            let cell = tableView.dequeueReusableCellWithIdentifier("myCell") as ReviewCell;
             
-            println(ratings);
-            
-            if (ratings["critics_rating"] != nil && ratings["critics_score"] != nil)
+            if (moviesArray?.count >= index)
             {
-                var percent:Int = ratings["critics_score"] as Int
+                let movie: NSDictionary = self.moviesArray?[index] as NSDictionary;
                 
-                var pStr: String = String(percent)
-                cell.tomatoLabel.text = pStr + "%";
+                let ratings: NSDictionary = movie["ratings"] as NSDictionary
                 
-                if (ratings["critics_rating"] as String == "Rotten")
+                println(ratings);
+                
+                if (ratings["critics_rating"] != nil && ratings["critics_score"] != nil)
                 {
-                    cell.tomatoIcon.image = UIImage(named: "splat-16")
+                    var percent:Int = ratings["critics_score"] as Int
+                    
+                    var pStr: String = String(percent)
+                    cell.tomatoLabel.text = pStr + "%";
+                    
+                    if (ratings["critics_rating"] as String == "Rotten")
+                    {
+                        cell.tomatoIcon.image = UIImage(named: "splat-16")
+                    }
                 }
-            }
-            else if (ratings["audience_score"] != nil)
-            {
-                var percent:Int = ratings["audience_score"] as Int;
-                
-                var pStr: String = String(percent)
-                cell.tomatoLabel.text = pStr + "%";
-                
-                if (percent < 50)
+                else if (ratings["audience_score"] != nil)
                 {
-                    cell.tomatoIcon.image = UIImage(named: "splat-16")
+                    var percent:Int = ratings["audience_score"] as Int;
+                    
+                    var pStr: String = String(percent)
+                    cell.tomatoLabel.text = pStr + "%";
+                    
+                    if (percent < 50)
+                    {
+                        cell.tomatoIcon.image = UIImage(named: "splat-16")
+                    }
                 }
+                
+                let title: String = movie["title"] as NSString;
+                cell.movieNameLabel.text = title;
+                
             }
-            
-            let title: String = movie["title"] as NSString;
-            cell.movieNameLabel.text = title;
-            
+            return cell;
         }
-        return cell;
+        else {
+            let cell = tableView.dequeueReusableCellWithIdentifier("networkErrorCell") as UITableViewCell;
+            return cell;
+        }
     }
     
     override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath)
     {
-        let detailsView: MovieDetailsViewController! = self.storyboard?.instantiateViewControllerWithIdentifier("detailsView") as MovieDetailsViewController
-        
-        let index:Int = indexPath.row
-        let movie: NSDictionary = self.moviesArray?[index] as NSDictionary
-        detailsView.movieData = movie
-        
-        self.showViewController(detailsView, sender: detailsView)
+        if ( !networkError )
+        {
+            let detailsView: MovieDetailsViewController! = self.storyboard?.instantiateViewControllerWithIdentifier("detailsView") as MovieDetailsViewController
+            
+            let index:Int = indexPath.row
+            let movie: NSDictionary = self.moviesArray?[index] as NSDictionary
+            detailsView.movieData = movie
+            
+            self.showViewController(detailsView, sender: detailsView)
+        }
+        else {
+            loadMovieData()
+        }
     }
     
     override func viewDidLoad()
@@ -99,10 +117,18 @@ class ViewController: UITableViewController //UIViewController, UITableViewDataS
         
         NSURLConnection.sendAsynchronousRequest(request, queue: NSOperationQueue.mainQueue(), completionHandler:{ ( response, data, error) in var errorValue: NSError? = nil
             
-            let dictionary = NSJSONSerialization.JSONObjectWithData(data, options: nil, error: &errorValue) as NSDictionary
-            
-            self.moviesArray = dictionary["movies"]! as? NSArray
-            
+            if (error != nil)
+            {
+                self.networkError = true
+            }
+            else
+            {
+                self.networkError = false
+                
+                let dictionary = NSJSONSerialization.JSONObjectWithData(data, options: nil, error: &errorValue) as NSDictionary
+                
+                self.moviesArray = dictionary["movies"]! as? NSArray
+            }
             self.tableView.reloadData()
             
             self.hideActivity()
